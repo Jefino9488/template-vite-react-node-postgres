@@ -87,7 +87,7 @@ PORT=5000`;
   
   createFileIfNotExists(backendEnvPath, backendEnvContent);
   
-  // 3. Create frontend Dockerfile if missing
+  // 3. Create a frontend Dockerfile if missing
   log('\n🐳 Setting up Docker files...', colors.bright);
   
   const frontendDockerfilePath = path.join(process.cwd(), 'frontend', 'Dockerfile');
@@ -131,10 +131,10 @@ CMD ["nginx", "-g", "daemon off;"]`;
   
   createFileIfNotExists(nginxConfPath, nginxConfContent);
   
-  // 4. Add ESLint to backend if missing
+  // 4. Add ESLint to the backend if missing
   log('\n🧹 Setting up linting...', colors.bright);
   
-  // Check if backend has ESLint
+  // Check if the backend has ESLint
   const backendPackageJsonPath = path.join(process.cwd(), 'backend', 'package.json');
   let backendPackageJson;
   

@@ -12,7 +12,7 @@ function App() {
             const response = await axios.get('/api/health');
             setMessage(response.data.message);
         } catch (error) {
-            setMessage('Failed to connect to backend');
+            setMessage('Failed to connect to backend' + (error.response ? `: ${error.response.data.message}` : ''));
         }
         setLoading(false);
     };
