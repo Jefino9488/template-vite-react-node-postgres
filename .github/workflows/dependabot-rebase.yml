@@ -1,9 +1,18 @@
 name: Dependabot Rebase
 
 on:
+  # 1. Trigger via comment
   issue_comment:
     types:
       - created
+      
+  # 2. Trigger via manual dispatch
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'The number of the PR to rebase'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -11,18 +20,38 @@ permissions:
 
 jobs:
   rebase:
-    # Only run on pull requests
+    # Run if triggered by a valid comment OR a manual dispatch
     if: |
-      github.event.issue.pull_request
-      && github.actor != 'dependabot[bot]'
-      && contains(github.event.comment.body, '/dependabot-rebase')
+      (github.event_name == 'workflow_dispatch') || 
+      (
+        github.event.issue.pull_request &&
+        github.actor != 'dependabot[bot]' &&
+        contains(github.event.comment.body, '/dependabot-rebase')
+      )
     runs-on: ubuntu-latest
     
     steps:
+      - name: Set up PR variables
+        id: setup
+        run: |
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "PR_NUMBER=${{ github.event.issue.pull_request.number }}" >> $GITHUB_ENV
+            echo "PR_REF=${{ github.event.issue.pull_request.head.ref }}" >> $GITHUB_ENV
+            echo "BASE_REF=${{ github.event.issue.pull_request.base.ref }}" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "PR_NUMBER=${{ github.event.inputs.pull_request_number }}" >> $GITHUB_ENV
+            PR_JSON=$(gh pr view ${{ github.event.inputs.pull_request_number }} --json headRefName,baseRefName)
+            echo "PR_REF=$(echo $PR_JSON | jq -r .headRefName)" >> $GITHUB_ENV
+            echo "BASE_REF=$(echo $PR_JSON | jq -r .baseRefName)" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout PR Branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.issue.pull_request.head.ref }}
+          ref: ${{ env.PR_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
@@ -39,15 +68,14 @@ jobs:
 
       - name: Fetch Target Branch (main)
         run: |
-          git fetch origin ${{ github.event.issue.pull_request.base.ref }}
+          git fetch origin ${{ env.BASE_REF }}
 
       - name: Perform Rebase
         run: |
-          git rebase origin/${{ github.event.issue.pull_request.base.ref }}
-        continue-on-error: true # We expect this to fail with conflicts
+          git rebase origin/${{ env.BASE_REF }}
+        continue-on-error: true # This is correct! It's expected to fail.
 
       - name: Install Dependencies to Regenerate Lockfiles
-        # This is the customized command from your root package.json
         run: npm run install:all
 
       - name: Commit and Force-Push Changes
@@ -64,10 +92,11 @@ jobs:
           fi
           
           # Force-push to the Dependabot branch to overwrite it
-          git push --force origin ${{ github.event.issue.pull_request.head.ref }}
+          git push --force origin ${{ env.PR_REF }}
 
-      - name: Add Reaction to Comment
+      - name: Add Reaction to Comment (if triggered by comment)
+        if: github.event_name == 'issue_comment'
         uses: peter-evans/create-or-update-comment@v4
         with:
-          comment-id: ${{ github.event.comment.id }}
-          reaction-type: rocket
+          comment-id: ${{ env.COMMENT_ID }}
+          reactions: rocket # <-- This is the corrected line
