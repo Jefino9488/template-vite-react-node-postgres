@@ -31,6 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      # --- FIX 1 ---
+      # You MUST check out the repo first so the 'gh' command has context.
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up PR variables
         id: setup
         run: |
@@ -48,6 +55,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # --- FIX 2 ---
+      # Now, check out the *actual PR branch* to perform the rebase on
       - name: Checkout PR Branch
         uses: actions/checkout@v4
         with:
@@ -73,7 +82,7 @@ jobs:
       - name: Perform Rebase
         run: |
           git rebase origin/${{ env.BASE_REF }}
-        continue-on-error: true # This is correct! It's expected to fail.
+        continue-on-error: true # This is correct!
 
       - name: Install Dependencies to Regenerate Lockfiles
         run: npm run install:all
@@ -99,4 +108,4 @@ jobs:
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ env.COMMENT_ID }}
-          reactions: rocket # <-- This is the corrected line
+          reactions: rocket # This is the corrected 'reactions' input
