@@ -105,7 +105,7 @@ jobs:
 
       - name: Add Reaction to Comment (if triggered by comment)
         if: github.event_name == 'issue_comment'
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ env.COMMENT_ID }}
           reactions: rocket # This is the corrected 'reactions' input
