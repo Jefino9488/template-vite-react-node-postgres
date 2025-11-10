@@ -34,7 +34,7 @@ jobs:
       # --- FIX 1 ---
       # You MUST check out the repo first so the 'gh' command has context.
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,7 +58,7 @@ jobs:
       # --- FIX 2 ---
       # Now, check out the *actual PR branch* to perform the rebase on
       - name: Checkout PR Branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ env.PR_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
