@@ -63,36 +63,36 @@ function createFileIfNotExists(filePath, content) {
 // Main setup function
 async function setup() {
   log('Starting project setup...', colors.bright + colors.green);
-  
+
   // 1. Install dependencies
   log('\n📦 Installing dependencies...', colors.bright);
-  
+
   // Install root dependencies
-  executeCommand('npm install');
-  
+  executeCommand('pnpm install');
+
   // Install frontend dependencies
-  executeCommand('npm install', path.join(process.cwd(), 'frontend'));
-  
+  executeCommand('pnpm install', path.join(process.cwd(), 'frontend'));
+
   // Install backend dependencies
-  executeCommand('npm install', path.join(process.cwd(), 'backend'));
-  
+  executeCommand('pnpm install', path.join(process.cwd(), 'backend'));
+
   // 2. Generate .env files
   log('\n🔧 Generating environment files...', colors.bright);
-  
+
   // Backend .env
   const backendEnvPath = path.join(process.cwd(), 'backend', '.env');
-  const backendEnvContent = 
-`DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
+  const backendEnvContent =
+    `DATABASE_URL=postgres://user:password@localhost:5432/mydb
 PORT=5000`;
-  
+
   createFileIfNotExists(backendEnvPath, backendEnvContent);
-  
+
   // 3. Create a frontend Dockerfile if missing
   log('\n🐳 Setting up Docker files...', colors.bright);
-  
+
   const frontendDockerfilePath = path.join(process.cwd(), 'frontend', 'Dockerfile');
-  const frontendDockerfileContent = 
-`FROM node:18-alpine as build
+  const frontendDockerfileContent =
+    `FROM node:18-alpine as build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -104,13 +104,13 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]`;
-  
+
   createFileIfNotExists(frontendDockerfilePath, frontendDockerfileContent);
-  
+
   // Create nginx.conf for frontend
   const nginxConfPath = path.join(process.cwd(), 'frontend', 'nginx.conf');
-  const nginxConfContent = 
-`server {
+  const nginxConfContent =
+    `server {
     listen 3000;
     
     location / {
@@ -128,32 +128,32 @@ CMD ["nginx", "-g", "daemon off;"]`;
         proxy_cache_bypass $http_upgrade;
     }
 }`;
-  
+
   createFileIfNotExists(nginxConfPath, nginxConfContent);
-  
+
   // 4. Add ESLint to the backend if missing
   log('\n🧹 Setting up linting...', colors.bright);
-  
+
   // Check if the backend has ESLint
   const backendPackageJsonPath = path.join(process.cwd(), 'backend', 'package.json');
   let backendPackageJson;
-  
+
   try {
     backendPackageJson = JSON.parse(fs.readFileSync(backendPackageJsonPath, 'utf8'));
-    
+
     // Add lint script if it doesn't exist
     if (!backendPackageJson.scripts.lint) {
       backendPackageJson.scripts.lint = "eslint .";
       fs.writeFileSync(backendPackageJsonPath, JSON.stringify(backendPackageJson, null, 2));
       log('Added lint script to backend package.json', colors.green);
-      
+
       // Install ESLint in backend
-      executeCommand('npm install --save-dev eslint', path.join(process.cwd(), 'backend'));
-      
+      executeCommand('pnpm install --save-dev eslint', path.join(process.cwd(), 'backend'));
+
       // Create ESLint config
       const eslintConfigPath = path.join(process.cwd(), 'backend', 'eslint.config.js');
-      const eslintConfigContent = 
-`export default [
+      const eslintConfigContent =
+        `export default [
   {
     ignores: ['node_modules/**', 'dist/**'],
   },
@@ -171,14 +171,14 @@ CMD ["nginx", "-g", "daemon off;"]`;
     },
   },
 ];`;
-      
+
       createFileIfNotExists(eslintConfigPath, eslintConfigContent);
     }
   } catch (error) {
     log('Error updating backend package.json', colors.red);
     log(error.message, colors.red);
   }
-  
+
   // 5. Setup complete
   log('\n✅ Setup complete!', colors.bright + colors.green);
   log('\nNext steps:', colors.bright);

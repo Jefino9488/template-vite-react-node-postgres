@@ -1,22 +1,30 @@
-import { Pool } from 'pg';
-import 'dotenv/config';
+const { Pool } = require('pg');
+
+const connectionString = process.env.DATABASE_URL || process.env.PG_CONNECTION || 'postgresql://postgres:postgres@postgres:5432/postgres';
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
+    max: parseInt(process.env.PG_POOL_MAX || '10', 10),
+    idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000', 10),
+    connectionTimeoutMillis: parseInt(process.env.PG_CONN_TIMEOUT || '5000', 10),
+    ssl: process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false
 });
 
-export async function testConnection() {
+pool.on('error', (err) => {
+    console.error('Unexpected PG client error', err);
+});
+
+const testConnection = async () => {
     try {
-        console.log('Attempting to connect with DATABASE_URL:', process.env.DATABASE_URL);
         const client = await pool.connect();
-        await client.query('SELECT NOW()');
         client.release();
-        console.log('Database connection successful');
         return { success: true, message: 'Database connection successful' };
     } catch (error) {
-        console.error('Database connection error:', error);
-        return { success: false, message: `Database connection failed: ${error.message}` };
+        console.error('Database connection failed', error);
+        return { success: false, message: 'Database connection failed', error: error.message };
     }
-}
+};
 
-export default pool;
+module.exports = { pool, testConnection };

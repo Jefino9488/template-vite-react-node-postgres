@@ -1,5 +1,5 @@
-import express from 'express';
-import { testConnection } from '../db/connect.js';
+const express = require('express');
+const { testConnection } = require('../db/connect');
 
 const router = express.Router();
 
@@ -8,4 +8,4 @@ router.get('/health', async (req, res) => {
     res.status(result.success ? 200 : 500).json(result);
 });
 
-export default router;
+module.exports = router;
